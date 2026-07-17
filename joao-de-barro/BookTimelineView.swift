@@ -26,6 +26,7 @@ struct BookTimelineView: View {
         green: 0.87,
         blue: 0.76
     )
+    //oieee
 
     // Largura total da área explorável
     private let contentWidth: CGFloat = 2000

@@ -10,34 +10,7 @@ import SwiftUI
 struct ContentView: View {
 
     var body: some View {
-        PageCurlView(
-            pages: [
-                AnyView(
-                    BookPage(
-                        pageNumber: 1,
-                        title: "Capítulo 1",
-                        text: "Esta é a primeira página."
-                    )
-                ),
-
-                AnyView(
-                    BookPage(
-                        pageNumber: 2,
-                        title: "Capítulo 2",
-                        text: "Agora você virou a página!"
-                    )
-                ),
-
-                AnyView(
-                    BookPage(
-                        pageNumber: 3,
-                        title: "Capítulo 3",
-                        text: "Fim do teste."
-                    )
-                )
-            ]
-        )
-        .ignoresSafeArea()
+        BookTimelineView()
     }
 }
 

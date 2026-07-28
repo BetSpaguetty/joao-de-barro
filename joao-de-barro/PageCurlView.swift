@@ -25,6 +25,7 @@ struct PageCurlView: UIViewControllerRepresentable {
         controller.dataSource = context.coordinator
         controller.delegate = context.coordinator
         controller.isDoubleSided = false
+        controller.view.backgroundColor = .clear
 
         if let firstPage = context.coordinator.controllers.first {
             controller.setViewControllers(
@@ -51,7 +52,9 @@ struct PageCurlView: UIViewControllerRepresentable {
 
         init(pages: [AnyView]) {
             controllers = pages.map { page in
-                UIHostingController(rootView: page)
+                let controller = UIHostingController(rootView: page)
+                controller.view.backgroundColor = .clear
+                return controller
             }
         }
 

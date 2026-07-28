@@ -17,566 +17,833 @@ struct TimelineComment: Identifiable {
     let cardHeight: CGFloat
 }
 
+struct BookNote: Identifiable {
+    let id = UUID()
+    let author: String
+    let text: String
+    let color: Color
+    let position: CGPoint
+    let size: CGSize
+    let rotation: Double
+}
+
 // MARK: - Tela principal
 
 struct BookTimelineView: View {
 
     private let backgroundColor = Color(
-        red: 0.88,
-        green: 0.87,
-        blue: 0.76
+        red: 0.84,
+        green: 0.83,
+        blue: 0.72
     )
-    //oieee
 
-    // Largura total da área explorável
-    private let contentWidth: CGFloat = 2000
-
-    // Posição atual do scroll
-    @State private var scrollOffset: CGFloat = 0
-
-    private let comments: [TimelineComment] = [
-        TimelineComment(
-            author: "Cecília",
-            text: "Nasci em uma cidade pequena e esse trecho me lembrou bastante...",
-            page: 12,
-            color: Color(
-                red: 0.97,
-                green: 0.34,
-                blue: 0.38
-            ),
-            xPosition: 220,
-            cardHeight: 165
-        ),
-
-        TimelineComment(
-            author: "Lucas",
-            text: "Achei interessante a decisão que o personagem tomou.",
-            page: 25,
-            color: Color(
-                red: 1.00,
-                green: 0.80,
-                blue: 0.28
-            ),
-            xPosition: 390,
-            cardHeight: 145
-        ),
-
-        TimelineComment(
-            author: "Marina",
-            text: "Essa parte mudou completamente a minha interpretação.",
-            page: 39,
-            color: Color(
-                red: 0.32,
-                green: 0.53,
-                blue: 0.59
-            ),
-            xPosition: 650,
-            cardHeight: 180
-        ),
-
-        TimelineComment(
-            author: "Pedro",
-            text: "Talvez exista uma pista importante escondida aqui.",
-            page: 58,
-            color: Color(
-                red: 0.96,
-                green: 0.61,
-                blue: 0.29
-            ),
-            xPosition: 930,
-            cardHeight: 155
-        ),
-
-        TimelineComment(
-            author: "Ana",
-            text: "Foi uma das partes que mais gostei até agora.",
-            page: 76,
-            color: Color(
-                red: 0.48,
-                green: 0.70,
-                blue: 0.68
-            ),
-            xPosition: 1210,
-            cardHeight: 190
-        ),
-
-        TimelineComment(
-            author: "João",
-            text: "Agora comecei a entender melhor o personagem.",
-            page: 94,
-            color: Color(
-                red: 0.62,
-                green: 0.48,
-                blue: 0.70
-            ),
-            xPosition: 1500,
-            cardHeight: 165
-        ),
-
-        TimelineComment(
-            author: "Clara",
-            text: "Essa frase se conecta bastante com o começo do livro.",
-            page: 112,
-            color: Color(
-                red: 0.91,
-                green: 0.48,
-                blue: 0.61
-            ),
-            xPosition: 1780,
-            cardHeight: 180
-        )
-    ]
+    @State private var currentPageIndex = 0
+    @State private var notesByPage: [Int: [BookNote]] = [:]
+    @State private var isShowingNoteComposer = false
+    @State private var draftNoteText = ""
 
     var body: some View {
         GeometryReader { geometry in
+            let size = geometry.size
+            let scale = min(size.width / 804, size.height / 1748)
+            let horizontalInset = (size.width - 804 * scale) / 2
+            let verticalInset = (size.height - 1748 * scale) / 2
 
-            let screenWidth = geometry.size.width
+            ZStack(alignment: .topLeading) {
+                backgroundColor
+                    .ignoresSafeArea()
 
-            VStack(spacing: 0) {
+                Group {
+                    HeaderView()
+                        .frame(width: 804, height: 250)
+                        .position(x: 402, y: 127)
 
-                Text("logo")
-                    .font(.system(size: 17))
+                    ReadingTimeline()
+                        .frame(width: 710, height: 84)
+                        .position(x: 412, y: 304)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Devorador de estrelas")
+                            .font(.system(size: 48, weight: .regular))
+
+                        Text("prazo: 30/07")
+                            .font(.system(size: 35, weight: .regular))
+                    }
                     .foregroundStyle(.black)
-                    .padding(.top, 24)
-                    .padding(.bottom, 8)
+                    .frame(width: 650, alignment: .leading)
+                    .position(x: 401, y: 434)
 
-                TimelineIndicator(
-                    scrollOffset: scrollOffset,
-                    screenWidth: screenWidth,
-                    contentWidth: contentWidth,
-                    commentCounts: commentCounts
-                )
-                .padding(.horizontal, 30)
-
-                Spacer()
-
-                ScrollView(
-                    .horizontal,
-                    showsIndicators: false
-                ) {
-                    ZStack(alignment: .topLeading) {
-
-                        SevenLineBook(
-                            width: contentWidth
-                        )
-
-                        ForEach(comments) { comment in
-                            CommentBookmark(comment: comment)
-                                .position(
-                                    x: comment.xPosition,
-                                    y: markerY(for: comment)
-                                )
-                        }
-                    }
-                    .frame(
-                        width: contentWidth,
-                        height: 600
+                    BookOutlineView(
+                        currentPageIndex: $currentPageIndex,
+                        notes: notesByPage[currentPageIndex, default: []]
                     )
+                        .frame(width: 750, height: 944)
+                        .position(x: 430, y: 1000)
+
+                    BottomBarView(
+                        onAddNote: openNoteComposer
+                    )
+                        .frame(width: 804, height: 245)
+                        .position(x: 402, y: 1627)
                 }
-                .onScrollGeometryChange(
-                    for: CGFloat.self,
-                    of: { scrollGeometry in
-                        scrollGeometry.contentOffset.x
-                    },
-                    action: { _, newOffset in
-                        scrollOffset = max(0, newOffset)
-                    }
-                )
+                .scaleEffect(scale, anchor: .topLeading)
+                .offset(x: horizontalInset, y: verticalInset)
             }
-            .background(backgroundColor)
         }
-        .ignoresSafeArea(edges: .bottom)
+        .sheet(isPresented: $isShowingNoteComposer) {
+            NoteComposerView(
+                text: $draftNoteText,
+                onCancel: closeNoteComposer,
+                onSave: saveDraftNote
+            )
+        }
     }
 
-    // Pequenas diferenças de altura entre os marcadores
-    private func markerY(
-        for comment: TimelineComment
-    ) -> CGFloat {
+    private func openNoteComposer() {
+        draftNoteText = ""
+        isShowingNoteComposer = true
+    }
 
-        let positions: [CGFloat] = [
-            275,
-            290,
-            260,
-            282
+    private func closeNoteComposer() {
+        draftNoteText = ""
+        isShowingNoteComposer = false
+    }
+
+    private func saveDraftNote() {
+        let trimmedText = draftNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedText.isEmpty else {
+            return
+        }
+
+        addNoteToCurrentPage(text: trimmedText)
+        closeNoteComposer()
+    }
+
+    private func addNoteToCurrentPage(text: String) {
+        let count = notesByPage[currentPageIndex, default: []].count
+        var pageNotes = notesByPage[currentPageIndex, default: []]
+        pageNotes.append(makeNote(index: count, text: text))
+        notesByPage[currentPageIndex] = pageNotes
+    }
+
+    private func makeNote(index: Int, text: String) -> BookNote {
+        let colors = [
+            Color(red: 0.92, green: 0.32, blue: 0.34),
+            Color(red: 0.99, green: 0.66, blue: 0.32),
+            Color(red: 0.99, green: 0.84, blue: 0.35),
+            Color(red: 0.30, green: 0.47, blue: 0.52)
         ]
 
-        let index = comment.page % positions.count
+        let positions = [
+            CGPoint(x: 525, y: 320),
+            CGPoint(x: 405, y: 515),
+            CGPoint(x: 515, y: 710),
+            CGPoint(x: 250, y: 720)
+        ]
 
-        return positions[index]
-    }
+        let sizes = [
+            CGSize(width: 240, height: 260),
+            CGSize(width: 140, height: 130),
+            CGSize(width: 240, height: 260),
+            CGSize(width: 245, height: 270)
+        ]
 
-    // Divide o livro em sete partes
-    // e conta os comentários de cada região
-    private var commentCounts: [Int] {
+        let templateIndex = index % colors.count
 
-        let sections = 7
-
-        return (0..<sections).map { section in
-
-            let start =
-                CGFloat(section) /
-                CGFloat(sections)
-
-            let end =
-                CGFloat(section + 1) /
-                CGFloat(sections)
-
-            return comments.filter { comment in
-
-                let normalizedPosition =
-                    comment.xPosition /
-                    contentWidth
-
-                return normalizedPosition >= start &&
-                       normalizedPosition < end
-            }
-            .count
-        }
+        return BookNote(
+            author: "Você",
+            text: "Você:\n\(text)",
+            color: colors[templateIndex],
+            position: positions[templateIndex],
+            size: sizes[templateIndex],
+            rotation: [-1.5, 0.8, -0.6, 1.2][templateIndex]
+        )
     }
 }
 
-// MARK: - Livro feito com sete linhas
+struct NoteComposerView: View {
 
-struct SevenLineBook: View {
+    @Binding var text: String
+    let onCancel: () -> Void
+    let onSave: () -> Void
 
-    let width: CGFloat
-
-    private let startX: CGFloat = 75
-    private let curveEndX: CGFloat = 190
-
-    private let topY: CGFloat = 355
-    private let curveEndY: CGFloat = 410
-
-    private let lineSpacing: CGFloat = 13
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-
-            // Primeira linha com a curva do começo do livro
-            Path { path in
-
-                path.move(
-                    to: CGPoint(
-                        x: startX,
-                        y: topY
-                    )
-                )
-
-                path.addCurve(
-                    to: CGPoint(
-                        x: curveEndX,
-                        y: curveEndY
-                    ),
-                    control1: CGPoint(
-                        x: 105,
-                        y: 390
-                    ),
-                    control2: CGPoint(
-                        x: 150,
-                        y: 410
-                    )
-                )
-
-                path.addLine(
-                    to: CGPoint(
-                        x: width - 40,
-                        y: 240
-                    )
-                )
-            }
-            .stroke(
-                .black,
-                style: StrokeStyle(
-                    lineWidth: 3.5,
-                    lineCap: .round,
-                    lineJoin: .round
-                )
-            )
-
-            // Outras seis linhas
-            ForEach(1..<7, id: \.self) { index in
-
-                Path { path in
-
-                    let offset =
-                        CGFloat(index) *
-                        lineSpacing
-
-                    path.move(
-                        to: CGPoint(
-                            x: curveEndX,
-                            y: curveEndY + offset
-                        )
-                    )
-
-                    path.addLine(
-                        to: CGPoint(
-                            x: width - 40,
-                            y: 240 + offset
-                        )
-                    )
-                }
-                .stroke(
-                    .black.opacity(0.48),
-                    style: StrokeStyle(
-                        lineWidth: 1.4,
-                        lineCap: .round
-                    )
-                )
-            }
-
-            // Pequena linha vertical indicando o começo/lombada
-            Path { path in
-
-                path.move(
-                    to: CGPoint(
-                        x: curveEndX,
-                        y: curveEndY
-                    )
-                )
-
-                path.addCurve(
-                    to: CGPoint(
-                        x: curveEndX,
-                        y: 555
-                    ),
-                    control1: CGPoint(
-                        x: 202,
-                        y: 455
-                    ),
-                    control2: CGPoint(
-                        x: 202,
-                        y: 515
-                    )
-                )
-            }
-            .stroke(
-                .black,
-                style: StrokeStyle(
-                    lineWidth: 3,
-                    lineCap: .round
-                )
-            )
-        }
+    private var canSave: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-}
-
-// MARK: - Marcadores
-
-struct CommentBookmark: View {
-
-    let comment: TimelineComment
-
-    @State private var isExpanded = false
 
     var body: some View {
-        Button {
-            withAnimation(
-                .spring(
-                    response: 0.35,
-                    dampingFraction: 0.78
-                )
-            ) {
-                isExpanded.toggle()
-            }
-        } label: {
-
-            VStack(spacing: 0) {
-
-                VStack(
-                    alignment: .leading,
-                    spacing: 6
-                ) {
-
-                    Text("\(comment.author.lowercased()):")
-                        .font(
-                            .system(
-                                size: isExpanded ? 13 : 11,
-                                weight: .semibold
-                            )
-                        )
-
-                    Text(comment.text)
-                        .font(
-                            .system(
-                                size: isExpanded ? 12 : 10
-                            )
-                        )
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(
-                            isExpanded ? 10 : 7
-                        )
-
-                    if isExpanded {
-                        Text("Página \(comment.page)")
-                            .font(.system(size: 9))
-                            .opacity(0.6)
+        NavigationStack {
+            VStack(spacing: 18) {
+                TextEditor(text: $text)
+                    .font(.system(size: 22))
+                    .padding(12)
+                    .frame(minHeight: 220)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(red: 0.94, green: 0.92, blue: 0.80))
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(.black, lineWidth: 2)
                     }
-                }
-                .foregroundStyle(.black)
-                .padding(10)
-                .frame(
-                    width: isExpanded ? 145 : 105,
-                    height: isExpanded
-                        ? comment.cardHeight + 35
-                        : comment.cardHeight,
-                    alignment: .topLeading
-                )
-                .background(comment.color)
 
-                // Parte inserida entre as páginas
-                Rectangle()
-                    .fill(comment.color)
-                    .frame(
-                        width: isExpanded ? 95 : 78,
-                        height: 80
-                    )
+                Spacer()
+            }
+            .padding(24)
+            .background(Color(red: 0.84, green: 0.83, blue: 0.72))
+            .navigationTitle("Nova nota")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancelar", action: onCancel)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Salvar", action: onSave)
+                        .disabled(!canSave)
+                }
             }
         }
-        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Header
+
+struct HeaderView: View {
+
+    var body: some View {
+        ZStack {
+            AvatarIcon()
+                .stroke(.black, lineWidth: 4)
+                .frame(width: 85, height: 85)
+                .position(x: 99, y: 178)
+
+            Text("logo")
+                .font(.system(size: 48, weight: .regular))
+                .foregroundStyle(.black)
+                .position(x: 402, y: 178)
+        }
+    }
+}
+
+struct AvatarIcon: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+
+        path.addEllipse(in: CGRect(
+            x: center.x - radius,
+            y: center.y - radius,
+            width: radius * 2,
+            height: radius * 2
+        ))
+
+        path.addEllipse(in: CGRect(
+            x: rect.midX - rect.width * 0.13,
+            y: rect.minY + rect.height * 0.21,
+            width: rect.width * 0.26,
+            height: rect.width * 0.26
+        ))
+
+        path.addArc(
+            center: CGPoint(x: rect.midX, y: rect.maxY + rect.height * 0.17),
+            radius: rect.width * 0.43,
+            startAngle: .degrees(222),
+            endAngle: .degrees(318),
+            clockwise: false
+        )
+
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.20, y: rect.maxY * 0.87))
+        path.addLine(to: CGPoint(x: rect.midX - rect.width * 0.19, y: rect.midY + rect.height * 0.18))
+
+        path.move(to: CGPoint(x: rect.maxX - rect.width * 0.20, y: rect.maxY * 0.87))
+        path.addLine(to: CGPoint(x: rect.midX + rect.width * 0.19, y: rect.midY + rect.height * 0.18))
+
+        return path
     }
 }
 
 // MARK: - Timeline superior
 
-struct TimelineIndicator: View {
+struct ReadingTimeline: View {
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Rectangle()
+                .fill(.black)
+                .frame(width: 626, height: 2)
+                .position(x: 355, y: 48)
 
-    let scrollOffset: CGFloat
-    let screenWidth: CGFloat
-    let contentWidth: CGFloat
-    let commentCounts: [Int]
+            Circle()
+                .fill(.black)
+                .frame(width: 13, height: 13)
+                .position(x: 33, y: 48)
 
-    private var maximumScroll: CGFloat {
-        max(
-            contentWidth - screenWidth,
-            1
-        )
+            Circle()
+                .fill(.black)
+                .frame(width: 24, height: 24)
+                .position(x: 52, y: 48)
+
+            Circle()
+                .fill(.black)
+                .frame(width: 11, height: 11)
+                .position(x: 677, y: 48)
+
+            Text("Pág 1")
+                .font(.system(size: 28, weight: .regular))
+                .foregroundStyle(.black)
+                .position(x: 35, y: 17)
+
+            Text("Pág 424")
+                .font(.system(size: 28, weight: .regular))
+                .foregroundStyle(.black)
+                .position(x: 675, y: 17)
+
+            TimelineAvatarMarker()
+                .frame(width: 40, height: 62)
+                .position(x: 243, y: 36)
+
+            Circle()
+                .fill(Color(red: 0.54, green: 0.66, blue: 0.62).opacity(0.55))
+                .frame(width: 78, height: 78)
+                .position(x: 327, y: 48)
+
+            Circle()
+                .fill(.black.opacity(0.07))
+                .frame(width: 37, height: 37)
+                .position(x: 462, y: 48)
+
+            Circle()
+                .fill(.black.opacity(0.07))
+                .frame(width: 47, height: 47)
+                .position(x: 499, y: 48)
+
+            Circle()
+                .fill(Color(red: 0.54, green: 0.66, blue: 0.62).opacity(0.55))
+                .frame(width: 27, height: 27)
+                .position(x: 572, y: 48)
+        }
+    }
+}
+
+struct TimelineAvatarMarker: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            AvatarIcon()
+                .stroke(.black, lineWidth: 2)
+                .frame(width: 29, height: 29)
+
+            Rectangle()
+                .fill(.black)
+                .frame(width: 2, height: 22)
+
+            Triangle()
+                .fill(.black)
+                .frame(width: 11, height: 11)
+        }
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Livro
+
+struct BookOutlineView: View {
+
+    @Binding var currentPageIndex: Int
+    let notes: [BookNote]
+
+    private let leftPageRect = CGRect(x: 55, y: 0, width: 675, height: 944)
+    private let visibleRightPageWidth: CGFloat = 104
+    private let pageTexts = [
+        "Não há comentários\nnessa sessão",
+        "Página 2",
+        "Página 3"
+    ]
+    private let pageColor = Color(
+        red: 0.84,
+        green: 0.83,
+        blue: 0.72
+    )
+
+    @State private var curlProgress: CGFloat = 0
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            BookLeftPageShape()
+                .stroke(.black, lineWidth: 2)
+                .frame(width: leftPageRect.width, height: leftPageRect.height)
+                .position(x: leftPageRect.midX, y: leftPageRect.midY)
+
+            if notes.isEmpty {
+                BookPageText(text: pageTexts[currentPageIndex])
+                    .position(x: 335, y: 762)
+            } else {
+                ForEach(notes) { note in
+                    CollageNoteView(note: note)
+                        .frame(width: note.size.width, height: note.size.height)
+                        .rotationEffect(.degrees(note.rotation))
+                        .position(note.position)
+                }
+            }
+
+            RightPageShape()
+                .fill(pageColor)
+                .frame(width: visibleRightPageWidth, height: leftPageRect.height)
+                .position(
+                    x: leftPageRect.maxX + visibleRightPageWidth / 2,
+                    y: leftPageRect.midY
+                )
+
+            RightPageShape()
+                .stroke(.black, lineWidth: 2)
+                .frame(width: visibleRightPageWidth, height: leftPageRect.height)
+                .position(
+                    x: leftPageRect.maxX + visibleRightPageWidth / 2,
+                    y: leftPageRect.midY
+                )
+
+            if curlProgress > 0 {
+                BookPageText(text: pageTexts[nextPageIndex])
+                    .position(x: 335, y: 762)
+
+                CurlingPageView(
+                    pageColor: pageColor,
+                    progress: curlProgress
+                )
+                .frame(
+                    width: max(leftPageRect.width * curlProgress, 1),
+                    height: leftPageRect.height
+                )
+                .position(
+                    x: leftPageRect.maxX - (leftPageRect.width * curlProgress / 2),
+                    y: leftPageRect.midY
+                )
+            }
+
+            Rectangle()
+                .fill(.clear)
+                .contentShape(Rectangle())
+                .frame(
+                    width: visibleRightPageWidth + 80,
+                    height: leftPageRect.height
+                )
+                .position(
+                    x: leftPageRect.maxX + visibleRightPageWidth / 2,
+                    y: leftPageRect.midY
+                )
+                .gesture(pageTurnGesture)
+                .onTapGesture {
+                    turnPage()
+                }
+        }
     }
 
-    private var progress: CGFloat {
-        min(
-            max(
-                scrollOffset / maximumScroll,
-                0
-            ),
-            1
-        )
+    private var nextPageIndex: Int {
+        min(currentPageIndex + 1, pageTexts.count - 1)
     }
+
+    private var pageTurnGesture: some Gesture {
+        DragGesture(minimumDistance: 4)
+            .onChanged { value in
+                let movement = max(-value.translation.width, 0)
+                curlProgress = min(movement / leftPageRect.width, 1)
+            }
+            .onEnded { _ in
+                if curlProgress > 0.28 {
+                    turnPage()
+                } else {
+                    withAnimation(.easeOut(duration: 0.18)) {
+                        curlProgress = 0
+                    }
+                }
+            }
+    }
+
+    private func turnPage() {
+        guard currentPageIndex < pageTexts.count - 1 else {
+            withAnimation(.easeOut(duration: 0.18)) {
+                curlProgress = 0
+            }
+            return
+        }
+
+        withAnimation(.easeInOut(duration: 0.34)) {
+            curlProgress = 1
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            currentPageIndex = nextPageIndex
+
+            withAnimation(.easeOut(duration: 0.01)) {
+                curlProgress = 0
+            }
+        }
+    }
+}
+
+struct BookPageText: View {
+
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 32, weight: .regular))
+            .foregroundStyle(.black)
+            .lineSpacing(6)
+            .frame(width: 420, alignment: .leading)
+    }
+}
+
+struct CollageNoteView: View {
+
+    let note: BookNote
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            StickyNoteShape()
+                .fill(note.color)
+
+            Text(note.text)
+                .font(.system(size: 21, weight: .regular))
+                .foregroundStyle(.black)
+                .lineSpacing(2)
+                .padding(.top, 30)
+                .padding(.leading, 45)
+                .padding(.trailing, 22)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            CommentPinShape()
+                .fill(.black)
+                .frame(width: 42, height: 50)
+                .position(x: note.size.width - 22, y: 14)
+        }
+        .clipped()
+    }
+}
+
+struct StickyNoteShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.02, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - rect.width * 0.04, y: rect.minY))
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: rect.maxY),
+            control1: CGPoint(x: rect.maxX - rect.width * 0.08, y: rect.height * 0.35),
+            control2: CGPoint(x: rect.maxX - rect.width * 0.02, y: rect.height * 0.72)
+        )
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.18, y: rect.maxY))
+        path.addCurve(
+            to: CGPoint(x: rect.minX + rect.width * 0.02, y: rect.minY),
+            control1: CGPoint(x: rect.minX + rect.width * 0.04, y: rect.maxY - rect.height * 0.18),
+            control2: CGPoint(x: rect.minX + rect.width * 0.04, y: rect.height * 0.30)
+        )
+        path.closeSubpath()
+
+        return path
+    }
+}
+
+struct CommentPinShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let circleRect = CGRect(
+            x: rect.minX,
+            y: rect.minY,
+            width: rect.width * 0.86,
+            height: rect.width * 0.72
+        )
+
+        path.addRoundedRect(
+            in: circleRect,
+            cornerSize: CGSize(width: rect.width * 0.28, height: rect.width * 0.28)
+        )
+        path.move(to: CGPoint(x: circleRect.maxX - rect.width * 0.15, y: circleRect.maxY - 2))
+        path.addCurve(
+            to: CGPoint(x: rect.minX + rect.width * 0.42, y: rect.maxY),
+            control1: CGPoint(x: circleRect.maxX - rect.width * 0.08, y: rect.maxY - rect.height * 0.20),
+            control2: CGPoint(x: rect.minX + rect.width * 0.52, y: rect.maxY - rect.height * 0.02)
+        )
+        path.addCurve(
+            to: CGPoint(x: circleRect.maxX - rect.width * 0.28, y: circleRect.maxY - 1),
+            control1: CGPoint(x: rect.minX + rect.width * 0.58, y: rect.maxY - rect.height * 0.20),
+            control2: CGPoint(x: circleRect.maxX - rect.width * 0.26, y: circleRect.maxY - rect.height * 0.10)
+        )
+
+        return path
+    }
+}
+
+struct CurlingPageView: View {
+
+    let pageColor: Color
+    let progress: CGFloat
 
     var body: some View {
         GeometryReader { geometry in
-
-            let timelineWidth =
-                geometry.size.width
-
-            let blackDotSize: CGFloat = 9
-
-            let availableWidth =
-                timelineWidth -
-                blackDotSize
-
-            let blackDotPosition =
-                progress *
-                availableWidth
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let curve = min(width * 0.28, 95)
 
             ZStack(alignment: .leading) {
+                Path { path in
+                    path.move(to: CGPoint(x: width, y: 92))
+                    path.addLine(to: CGPoint(x: width, y: height))
+                    path.addCurve(
+                        to: CGPoint(x: 0, y: height - 39),
+                        control1: CGPoint(x: width - 215 * progress, y: height - 58),
+                        control2: CGPoint(x: curve, y: height - 64)
+                    )
+                    path.addLine(to: CGPoint(x: 0, y: 7))
+                    path.addCurve(
+                        to: CGPoint(x: width, y: 92),
+                        control1: CGPoint(x: curve, y: -34),
+                        control2: CGPoint(x: width - 136 * progress, y: 38)
+                    )
+                    path.closeSubpath()
+                }
+                .fill(pageColor)
+                .shadow(color: .black.opacity(0.24), radius: 10, x: -8, y: 0)
+
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: 7))
+                    path.addCurve(
+                        to: CGPoint(x: min(curve * 0.9, width), y: height - 36),
+                        control1: CGPoint(x: curve * 0.36, y: height * 0.20),
+                        control2: CGPoint(x: -curve * 0.12, y: height * 0.70)
+                    )
+                    path.addLine(to: CGPoint(x: 0, y: height - 39))
+                    path.closeSubpath()
+                }
+                .fill(pageColor)
+
+                Path { path in
+                    path.move(to: CGPoint(x: max(curve * 0.35, 1), y: 20))
+                    path.addCurve(
+                        to: CGPoint(x: max(curve * 0.12, 1), y: height - 42),
+                        control1: CGPoint(x: -curve * 0.28, y: height * 0.30),
+                        control2: CGPoint(x: curve * 0.24, y: height * 0.72)
+                    )
+                }
+                .stroke(
+                    .black.opacity(0.24),
+                    style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                )
 
                 Rectangle()
-                    .fill(.black.opacity(0.7))
-                    .frame(height: 1.5)
-
-                // Bolhas que representam os comentários
-                HStack(spacing: 0) {
-
-                    ForEach(
-                        Array(
-                            commentCounts.enumerated()
-                        ),
-                        id: \.offset
-                    ) { index, count in
-
-                        Circle()
-                            .fill(
-                                .black.opacity(
-                                    bubbleOpacity(
-                                        for: count
-                                    )
-                                )
-                            )
-                            .frame(
-                                width: bubbleSize(
-                                    for: count
-                                ),
-                                height: bubbleSize(
-                                    for: count
-                                )
-                            )
-
-                        if index <
-                            commentCounts.count - 1 {
-
-                            Spacer()
-                        }
-                    }
+                    .fill(pageColor)
+                    .frame(width: min(width * 0.22, 72))
+                    .position(x: min(width * 0.11, 36), y: height / 2)
+            }
+            .overlay {
+                Path { path in
+                    path.move(to: CGPoint(x: width, y: 92))
+                    path.addLine(to: CGPoint(x: width, y: height))
                 }
-
-                // Bolinha preta que acompanha o scroll
-                Circle()
-                    .fill(.black)
-                    .frame(
-                        width: blackDotSize,
-                        height: blackDotSize
-                    )
-                    .offset(
-                        x: blackDotPosition
-                    )
+                .stroke(.black, lineWidth: 2)
             }
         }
-        .frame(height: 48)
     }
+}
 
-    private func bubbleSize(
-        for count: Int
-    ) -> CGFloat {
+struct BookLeftPageShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
 
-        switch count {
-        case 0:
-            return 7
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + 7))
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + 92),
+            control1: CGPoint(x: rect.minX + 184, y: rect.minY - 36),
+            control2: CGPoint(x: rect.maxX - 136, y: rect.minY + 38)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - 1))
+        path.addCurve(
+            to: CGPoint(x: rect.minX, y: rect.maxY - 39),
+            control1: CGPoint(x: rect.maxX - 215, y: rect.maxY - 58),
+            control2: CGPoint(x: rect.minX + 176, y: rect.maxY - 64)
+        )
+        path.closeSubpath()
 
-        case 1:
-            return 18
+        return path
+    }
+}
 
-        case 2:
-            return 28
+struct RightPageShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
 
-        case 3:
-            return 37
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + 92))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + 70))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - 21))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
 
-        default:
-            return 44
+        return path
+    }
+}
+
+// MARK: - Navegação
+
+struct BottomBarView: View {
+
+    let onAddNote: () -> Void
+
+    var body: some View {
+        ZStack {
+            RibbonButton()
+                .stroke(.black, lineWidth: 2)
+                .frame(width: 135, height: 242)
+                .position(x: 122, y: 126)
+
+            OpenBookIcon()
+                .stroke(.black, lineWidth: 5)
+                .frame(width: 76, height: 60)
+                .position(x: 124, y: 142)
+
+            Rectangle()
+                .stroke(.black, lineWidth: 2)
+                .frame(width: 116, height: 177)
+                .position(x: 280, y: 159)
+
+            ChatIcon()
+                .stroke(.black, lineWidth: 4)
+                .frame(width: 82, height: 66)
+                .position(x: 283, y: 163)
+
+            Button(action: onAddNote) {
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 0.50, green: 0.68, blue: 0.66))
+                        .frame(width: 178, height: 178)
+
+                    FeatherIcon()
+                        .stroke(
+                            .black,
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+                        )
+                        .frame(width: 78, height: 116)
+                }
+            }
+            .buttonStyle(.plain)
+            .frame(width: 178, height: 178)
+                .position(x: 665, y: 152)
         }
     }
+}
 
-    private func bubbleOpacity(
-        for count: Int
-    ) -> Double {
+struct RibbonButton: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.12))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
 
-        switch count {
-        case 0:
-            return 0.06
+struct OpenBookIcon: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.1))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.28))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.1))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height * 0.18))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
 
-        case 1:
-            return 0.14
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.28))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - rect.height * 0.18))
+        return path
+    }
+}
 
-        case 2:
-            return 0.20
+struct ChatIcon: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let bubble = CGRect(
+            x: rect.minX,
+            y: rect.minY,
+            width: rect.width,
+            height: rect.height * 0.78
+        )
 
-        case 3:
-            return 0.26
+        path.addRoundedRect(
+            in: bubble,
+            cornerSize: CGSize(width: 8, height: 8)
+        )
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.23, y: bubble.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.08, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.38, y: bubble.maxY))
 
-        default:
-            return 0.32
+        return path
+    }
+}
+
+struct FeatherIcon: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.28, y: rect.maxY))
+        path.addCurve(
+            to: CGPoint(x: rect.minX + rect.width * 0.85, y: rect.minY + rect.height * 0.03),
+            control1: CGPoint(x: rect.minX + rect.width * 0.24, y: rect.midY),
+            control2: CGPoint(x: rect.minX + rect.width * 0.54, y: rect.minY + rect.height * 0.08)
+        )
+        path.addCurve(
+            to: CGPoint(x: rect.minX + rect.width * 0.26, y: rect.minY + rect.height * 0.58),
+            control1: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.30),
+            control2: CGPoint(x: rect.minX + rect.width * 0.64, y: rect.minY + rect.height * 0.53)
+        )
+
+        let ribs: [(CGFloat, CGFloat)] = [
+            (0.44, 0.44),
+            (0.49, 0.33),
+            (0.55, 0.24),
+            (0.61, 0.15),
+            (0.67, 0.08),
+            (0.72, 0.04)
+        ]
+
+        for rib in ribs {
+            let base = CGPoint(
+                x: rect.minX + rect.width * 0.30,
+                y: rect.minY + rect.height * rib.0
+            )
+            let tip = CGPoint(
+                x: rect.minX + rect.width * 0.88,
+                y: rect.minY + rect.height * rib.1
+            )
+            path.move(to: base)
+            path.addLine(to: tip)
         }
+
+        for rib in ribs {
+            let base = CGPoint(
+                x: rect.minX + rect.width * 0.34,
+                y: rect.minY + rect.height * (rib.0 + 0.03)
+            )
+            let tip = CGPoint(
+                x: rect.minX + rect.width * 0.12,
+                y: rect.minY + rect.height * (rib.1 + 0.36)
+            )
+            path.move(to: base)
+            path.addLine(to: tip)
+        }
+
+        return path
     }
 }
 

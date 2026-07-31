@@ -9,6 +9,10 @@ import SwiftUI
 
 enum TimeLineSampleData {
 
+    // Cada número representa quantos comentários existem
+    // em uma parte da leitura.
+    static let commentCountsByPart = [2, 1]
+
     static let comments: [BookDiscussionComment] = [
         BookDiscussionComment(
             author: "Elisa",

@@ -5,6 +5,9 @@ struct TimeLine: View {
     @State private var comments: [BookDiscussionComment]
     @State private var selectedCommentID: UUID?
     @State private var likedComments = Set<UUID>()
+    @State private var currentPage = 0
+
+    private let totalPages = 480
 
     init() {
         let comments = TimeLineSampleData.comments
@@ -75,7 +78,13 @@ struct TimeLine: View {
 
             Spacer(minLength: 0)
 
-            ReadingProgressHeader()
+            ReadingProgressHeader(
+                currentCommentIndex: selectedCommentIndex,
+                commentCountsByPart:
+                    TimeLineSampleData.commentCountsByPart,
+                readingProgress: Double(currentPage)
+                    / Double(totalPages)
+            )
             BookDividerView()
         }
     }
@@ -155,7 +164,7 @@ struct TimeLine: View {
                     maxHeight: .infinity,
                     alignment: .top
                 )
-                .padding(.top, 50)
+                .padding(.top, 40)
                 .id(comment.id)
                 .transition(.opacity)
             }
@@ -169,7 +178,13 @@ struct TimeLine: View {
 
     private var progressButton: some View {
         NavigationLink {
-            TimeLineProgressView()
+            TimeLineProgressView(
+                currentPage: max(currentPage, 1),
+                totalPages: totalPages,
+                onSave: { page, _ in
+                    currentPage = page
+                }
+            )
         } label: {
             Image("BotaoProgresso")
                 .resizable()
@@ -191,6 +206,17 @@ struct TimeLine: View {
         return comments.first {
             $0.id == selectedCommentID
         }
+    }
+
+    private var selectedCommentIndex: Int {
+        guard let selectedCommentID,
+              let index = comments.firstIndex(
+                where: { $0.id == selectedCommentID }
+              ) else {
+            return 0
+        }
+
+        return index
     }
 
     // MARK: - Helpers

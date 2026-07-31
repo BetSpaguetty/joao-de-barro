@@ -54,21 +54,21 @@ final class AudioRecorder {
     private func requestPermission() async -> Bool {
         #if os(macOS)
         return await AVCaptureDevice.requestAccess(for: .audio)
-        #else
+#else
         if #available(iOS 17.0, *) {
             return await withCheckedContinuation { continuation in
                 AVAudioApplication.requestRecordPermission { allowed in
                     continuation.resume(returning: allowed)
                 }
             }
-        }
-
-        return await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { allowed in
-                continuation.resume(returning: allowed)
+        } else {
+            return await withCheckedContinuation { continuation in
+                AVAudioSession.sharedInstance().requestRecordPermission { allowed in
+                    continuation.resume(returning: allowed)
+                }
             }
         }
-        #endif
+#endif
     }
 
     private func recordingURL() throws -> URL {
@@ -85,3 +85,4 @@ final class AudioRecorder {
             .appendingPathExtension("m4a")
     }
 }
+

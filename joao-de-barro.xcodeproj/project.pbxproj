@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		1FA01065300A9DAD007BB833 /* joao-de-barro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "joao-de-barro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1FA01065300A9DAD007BB833 /* joao-de-barro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = "joao-de-barro.app"; path = "/Users/ilancukierman/Documents/joao-de-barro/build/Debug/joao-de-barro.app"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,16 +33,7 @@
 			isa = PBXGroup;
 			children = (
 				1FA01067300A9DAD007BB833 /* joao-de-barro */,
-				1FA01066300A9DAD007BB833 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		1FA01066300A9DAD007BB833 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1FA01065300A9DAD007BB833 /* joao-de-barro.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -95,7 +86,7 @@
 			mainGroup = 1FA0105C300A9DAD007BB833;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 1FA01066300A9DAD007BB833 /* Products */;
+			productRefGroup = 1FA0105C300A9DAD007BB833;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

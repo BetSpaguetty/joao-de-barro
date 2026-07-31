@@ -220,7 +220,7 @@ struct TimeLine: View {
 
     private func addReply(
         commentID: UUID,
-        text: String
+        reply: BookChatReply
     ) {
         guard let commentIndex =
             comments.firstIndex(
@@ -230,15 +230,9 @@ struct TimeLine: View {
             return
         }
 
-        let newReply = BookChatReply(
-            author: "Você",
-            text: text,
-            isCurrentUser: true
-        )
-
         comments[commentIndex]
             .replies
-            .append(newReply)
+            .append(reply)
     }
 
 }

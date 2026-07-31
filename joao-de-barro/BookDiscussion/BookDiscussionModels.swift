@@ -5,6 +5,7 @@
 //  Created by Ilan Cukierman on 28/07/26.
 //
 
+import Foundation
 import SwiftUI
 
 struct BookChatReply: Identifiable {
@@ -12,6 +13,26 @@ struct BookChatReply: Identifiable {
     let author: String
     let text: String
     let isCurrentUser: Bool
+    let audioURL: URL?
+    let transcription: String?
+
+    init(
+        author: String,
+        text: String = "",
+        isCurrentUser: Bool,
+        audioURL: URL? = nil,
+        transcription: String? = nil
+    ) {
+        self.author = author
+        self.text = text
+        self.isCurrentUser = isCurrentUser
+        self.audioURL = audioURL
+        self.transcription = transcription
+    }
+
+    var isAudioMessage: Bool {
+        audioURL != nil
+    }
 }
 
 struct BookDiscussionComment: Identifiable {

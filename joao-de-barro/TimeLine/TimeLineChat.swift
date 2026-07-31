@@ -13,14 +13,16 @@ struct TimeLineChat: View {
     @FocusState private var isTextFieldFocused: Bool
 
     let comment: BookDiscussionComment
-    let onSendReply: (UUID, String) -> Void
+    let onSendReply: (UUID, BookChatReply) -> Void
 
     @State private var message = ""
     @State private var replies: [BookChatReply]
+    @State private var recorder = AudioRecorder()
+    private let audioTranscriber = AudioTranscriber()
 
     init(
         comment: BookDiscussionComment,
-        onSendReply: @escaping (UUID, String) -> Void
+        onSendReply: @escaping (UUID, BookChatReply) -> Void
     ) {
         self.comment = comment
         self.onSendReply = onSendReply
@@ -64,6 +66,8 @@ struct TimeLineChat: View {
                                 TimeLineChatPaper(
                                     author: reply.author,
                                     text: reply.text,
+                                    audioURL: reply.audioURL,
+                                    transcription: reply.transcription,
                                     isCurrentUser:
                                         reply.isCurrentUser,
                                     angle: index.isMultiple(of: 2)
@@ -117,6 +121,14 @@ struct TimeLineChat: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(.light)
+        .alert("Gravação de áudio", isPresented: Binding(
+            get: { recorder.errorMessage != nil },
+            set: { if !$0 { recorder.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { recorder.errorMessage = nil }
+        } message: {
+            Text(recorder.errorMessage ?? "")
+        }
     }
 
     // MARK: - Cabeçalho
@@ -172,13 +184,23 @@ struct TimeLineChat: View {
     private var messageComposer: some View {
         HStack(spacing: 9) {
             Button {
-                // Gravação de áudio.
+                if recorder.isRecording {
+                    guard let audioURL = recorder.stopRecording() else { return }
+                    Task { await sendAudioReply(audioURL: audioURL) }
+                } else {
+                    Task { await recorder.startRecording() }
+                }
             } label: {
-                Image(systemName: "mic")
+                Image(systemName: recorder.isRecording ? "stop.circle.fill" : "mic")
                     .font(.system(size: 23))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(recorder.isRecording ? .red : .black)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(
+                recorder.isRecording
+                    ? "Parar e enviar áudio"
+                    : "Gravar resposta em áudio"
+            )
 
             TextField(
                 "escreva sua resposta...",
@@ -246,12 +268,26 @@ struct TimeLineChat: View {
             replies.append(newReply)
         }
 
-        onSendReply(
-            comment.id,
-            trimmedMessage
-        )
+        onSendReply(comment.id, newReply)
 
         message = ""
+    }
+
+    private func sendAudioReply(audioURL: URL) async {
+        let transcription = await audioTranscriber.transcribe(audioURL: audioURL)
+            ?? "Transcrição indisponível."
+        let newReply = BookChatReply(
+            author: "Você",
+            isCurrentUser: true,
+            audioURL: audioURL,
+            transcription: transcription
+        )
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            replies.append(newReply)
+        }
+
+        onSendReply(comment.id, newReply)
     }
 }
 
@@ -261,8 +297,11 @@ private struct TimeLineChatPaper: View {
 
     let author: String
     let text: String
+    var audioURL: URL?
+    var transcription: String?
     var isCurrentUser = false
     var angle = 0.0
+    @State private var audioPlayer = AudioPlayer()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 11) {
@@ -284,18 +323,36 @@ private struct TimeLineChatPaper: View {
                 .fill(.black.opacity(0.8))
                 .frame(height: 1)
 
-            Text(text)
-                .font(
-                    .system(
-                        size: 14,
-                        design: .monospaced
+            if let audioURL {
+                Button {
+                    audioPlayer.toggle(url: audioURL)
+                } label: {
+                    Label(
+                        audioPlayer.isPlaying ? "Parar áudio" : "Mensagem de áudio",
+                        systemImage: audioPlayer.isPlaying ? "stop.fill" : "play.fill"
                     )
-                )
-                .lineSpacing(2)
-                .fixedSize(
-                    horizontal: false,
-                    vertical: true
-                )
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Reproduz o áudio enviado")
+
+                Text(transcription ?? "Transcrição indisponível.")
+                    .font(.system(size: 14, design: .monospaced))
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(text)
+                    .font(
+                        .system(
+                            size: 14,
+                            design: .monospaced
+                        )
+                    )
+                    .lineSpacing(2)
+                    .fixedSize(
+                        horizontal: false,
+                        vertical: true
+                    )
+            }
         }
         .foregroundStyle(.black)
         .frame(width: 282, alignment: .leading)

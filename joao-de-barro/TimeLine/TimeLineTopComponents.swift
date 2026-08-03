@@ -44,11 +44,12 @@ struct TimeLineHeader: View {
                         Image(systemName: "gearshape")
                     }
 
-                    Button {
-                        // Abrir perfil.
+                    NavigationLink {
+                        PerfilClube()
                     } label: {
                         Image(systemName: "person")
                     }
+                    .accessibilityLabel("Abrir perfil do clube")
                 }
                 .font(.system(size: 24))
                 .frame(width: 76, alignment: .trailing)

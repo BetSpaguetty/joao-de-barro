@@ -23,6 +23,7 @@ struct ClubBook: Identifiable {
 struct PerfilClube: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     let members: [ClubMember]
     let books: [ClubBook]
@@ -164,11 +165,19 @@ struct PerfilClube: View {
 
             if let currentBook {
                 HStack(alignment: .top, spacing: 22) {
-                    ClubBookCover(
-                        book: currentBook,
-                        width: 116,
-                        height: 152
-                    )
+                    Button {
+                        if let url = googleBooksURL(for: currentBook) {
+                            openURL(url)
+                        }
+                    } label: {
+                        ClubBookCover(
+                            book: currentBook,
+                            width: 116,
+                            height: 152
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Buscar \(currentBook.title) no Google Books")
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text(currentBook.title)
@@ -246,6 +255,16 @@ struct PerfilClube: View {
             .font(.system(size: 15, design: .monospaced))
             .tracking(1)
             .foregroundStyle(.black)
+    }
+
+    private func googleBooksURL(for book: ClubBook) -> URL? {
+        var components = URLComponents(
+            string: "https://www.googleapis.com/books/v1/volumes"
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: "intitle:\(book.title)")
+        ]
+        return components?.url
     }
 }
 

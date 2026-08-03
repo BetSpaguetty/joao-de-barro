@@ -66,7 +66,8 @@ struct TimeLineHeader: View {
 struct ReadingProgressHeader: View {
 
     var currentCommentIndex = 0
-    var commentCountsByPart: [Int] = [1]
+    var commentPages: [Int] = []
+    var totalPages = 1
     var readingProgress = 0.0
 
     var body: some View {
@@ -154,39 +155,24 @@ struct ReadingProgressHeader: View {
     private func commentPositions(
         width: CGFloat
     ) -> [CGFloat] {
-        let counts = commentCountsByPart
-            .filter { $0 > 0 }
+        let pages = commentPages
+            .filter { $0 >= 0 }
+            .sorted()
 
-        guard !counts.isEmpty else {
+        guard !pages.isEmpty else {
             return []
         }
 
-        let commentSpacing: CGFloat = 18
-        let partSpacing: CGFloat = 44
-        var rawPositions: [CGFloat] = []
-        var currentPosition: CGFloat = 0
+        let safeTotal = max(totalPages, 1)
+        let usableWidth = max(width - 14, 1)
 
-        for (partIndex, count) in counts.enumerated() {
-            for commentIndex in 0..<count {
-                rawPositions.append(currentPosition)
+        return pages.map { page in
+            let progress = min(
+                max(CGFloat(page) / CGFloat(safeTotal), 0),
+                1
+            )
 
-                if commentIndex < count - 1 {
-                    currentPosition += commentSpacing
-                }
-            }
-
-            if partIndex < counts.count - 1 {
-                currentPosition += partSpacing
-            }
-        }
-
-        let start = width * 0.16
-        let availableSpan = max(width - start - 14, 1)
-        let rawSpan = max(rawPositions.last ?? 0, 1)
-        let scale = min(availableSpan / rawSpan, 1)
-
-        return rawPositions.map {
-            start + ($0 * scale)
+            return 7 + (progress * usableWidth)
         }
     }
 }

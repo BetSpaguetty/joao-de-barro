@@ -6,11 +6,14 @@ struct TimeLineProgressView: View {
     @FocusState private var focusedField: Field?
 
     let totalPages: Int
-    let onSave: (Int, String) -> Void
+    let onSave: (Int, String, URL?, String?) -> Void
 
     @State private var selectedPage: Double
     @State private var pageText: String
     @State private var readingComment = ""
+    @State private var recordedAudioURL: URL?
+    @State private var recorder = AudioRecorder()
+    private let audioTranscriber = AudioTranscriber()
 
     private enum Field {
         case page
@@ -20,7 +23,7 @@ struct TimeLineProgressView: View {
     init(
         currentPage: Int = 234,
         totalPages: Int = 480,
-        onSave: @escaping (Int, String) -> Void = { _, _ in }
+        onSave: @escaping (Int, String, URL?, String?) -> Void = { _, _, _, _ in }
     ) {
         let safeTotal = max(totalPages, 1)
         let safePage = min(max(currentPage, 1), safeTotal)
@@ -46,6 +49,16 @@ struct TimeLineProgressView: View {
         .preferredColorScheme(.light)
         .onTapGesture {
             focusedField = nil
+        }
+        .alert("Gravação de áudio", isPresented: Binding(
+            get: { recorder.errorMessage != nil },
+            set: { if !$0 { recorder.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {
+                recorder.errorMessage = nil
+            }
+        } message: {
+            Text(recorder.errorMessage ?? "")
         }
     }
 
@@ -198,14 +211,25 @@ struct TimeLineProgressView: View {
                     }
 
                 Button {
-                    // Iniciar gravação de áudio.
+                    toggleRecording()
                 } label: {
-                    Image(systemName: "mic")
+                    Image(
+                        systemName: recorder.isRecording
+                            ? "stop.circle.fill"
+                            : "mic"
+                    )
                         .font(.system(size: 25))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(
+                            recorder.isRecording ? .red : .black
+                        )
                         .padding(16)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(
+                    recorder.isRecording
+                        ? "Parar gravação"
+                        : "Gravar comentário em áudio"
+                )
             }
             .frame(height: 238)
             .overlay {
@@ -221,19 +245,18 @@ struct TimeLineProgressView: View {
 
             Button {
                 focusedField = nil
-                onSave(
-                    Int(selectedPage),
-                    readingComment.trimmingCharacters(
-                        in: .whitespacesAndNewlines
-                    )
-                )
+                saveComment()
                 dismiss()
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "paperplane")
                         .font(.system(size: 22))
 
-                    Text("Enviar comentário")
+                    Text(
+                        hasComment
+                            ? "Enviar comentário"
+                            : "Salvar progresso"
+                    )
                         .font(
                             .system(
                                 size: 14,
@@ -251,7 +274,56 @@ struct TimeLineProgressView: View {
                 }
             }
             .buttonStyle(.plain)
+            .disabled(recorder.isRecording)
+            .opacity(recorder.isRecording ? 0.45 : 1)
         }
+    }
+
+    private var trimmedComment: String {
+        readingComment.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+    }
+
+    private var hasComment: Bool {
+        !trimmedComment.isEmpty || recordedAudioURL != nil
+    }
+
+    private func toggleRecording() {
+        if recorder.isRecording {
+            guard let audioURL = recorder.stopRecording() else {
+                return
+            }
+
+            recordedAudioURL = audioURL
+            Task {
+                if let transcription = await audioTranscriber.transcribe(
+                    audioURL: audioURL
+                ), readingComment.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                ).isEmpty {
+                    readingComment = transcription
+                }
+            }
+        } else {
+            focusedField = nil
+            Task {
+                await recorder.startRecording()
+            }
+        }
+    }
+
+    private func saveComment() {
+        let transcription = recordedAudioURL == nil
+            ? nil
+            : (trimmedComment.isEmpty ? nil : trimmedComment)
+
+        onSave(
+            Int(selectedPage),
+            trimmedComment,
+            recordedAudioURL,
+            transcription
+        )
     }
 
     private func updatePageFromText() {

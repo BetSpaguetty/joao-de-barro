@@ -55,6 +55,7 @@ struct TimeLineChat: View {
                             TimeLineChatPaper(
                                 author: comment.author,
                                 text: comment.text,
+                                page: comment.page,
                                 angle: -1.2
                             )
                             .zIndex(0)
@@ -297,6 +298,7 @@ private struct TimeLineChatPaper: View {
 
     let author: String
     let text: String
+    var page: Int? = nil
     var audioURL: URL?
     var transcription: String?
     var isCurrentUser = false
@@ -317,6 +319,15 @@ private struct TimeLineChatPaper: View {
                             design: .monospaced
                         )
                     )
+
+                Spacer()
+
+                if let page {
+                    Text("pág. \(page)")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.black.opacity(0.58))
+                        .fixedSize()
+                }
             }
 
             Rectangle()

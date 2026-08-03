@@ -9,10 +9,6 @@ import SwiftUI
 
 enum TimeLineSampleData {
 
-    // Cada número representa quantos comentários existem
-    // em uma parte da leitura.
-    static let commentCountsByPart = [2, 1]
-
     static let comments: [BookDiscussionComment] = [
         BookDiscussionComment(
             author: "Elisa",
@@ -20,6 +16,7 @@ enum TimeLineSampleData {
             Cara, ainda não entendi qual a razão desse ranço todo que o Raphael coloca nos personagens em relação à sexualidade alheia. Até agora não teve um com uma reação decente ao fato do Zak ser gay (ou bi, sei lá)...
             """,
             color: .white,
+            page: 72,
             replies: [
                 BookChatReply(
                     author: "Cecília",
@@ -44,6 +41,7 @@ enum TimeLineSampleData {
             “Ninguém morre vazio de sonhos. O morto é enterrado com seus projetos, seus desejos, tudo...”
             """,
             color: .white,
+            page: 72,
             replies: [
                 BookChatReply(
                     author: "Elisa",
@@ -61,6 +59,7 @@ enum TimeLineSampleData {
             Essa revelação mudou completamente a forma como eu estava enxergando o personagem. Agora várias atitudes anteriores começaram a fazer sentido.
             """,
             color: .white,
+            page: 190,
             replies: []
         )
     ]

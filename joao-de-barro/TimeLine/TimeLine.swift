@@ -79,9 +79,9 @@ struct TimeLine: View {
             Spacer(minLength: 0)
 
             ReadingProgressHeader(
-                currentCommentIndex: selectedCommentIndex,
-                commentCountsByPart:
-                    TimeLineSampleData.commentCountsByPart,
+                currentCommentIndex: selectedCommentPartIndex,
+                commentPages: commentPages,
+                totalPages: totalPages,
                 readingProgress: Double(currentPage)
                     / Double(totalPages)
             )
@@ -181,8 +181,14 @@ struct TimeLine: View {
             TimeLineProgressView(
                 currentPage: max(currentPage, 1),
                 totalPages: totalPages,
-                onSave: { page, _ in
+                onSave: { page, text, audioURL, transcription in
                     currentPage = page
+                    addComment(
+                        text: text,
+                        page: page,
+                        audioURL: audioURL,
+                        transcription: transcription
+                    )
                 }
             )
         } label: {
@@ -208,11 +214,13 @@ struct TimeLine: View {
         }
     }
 
-    private var selectedCommentIndex: Int {
-        guard let selectedCommentID,
-              let index = comments.firstIndex(
-                where: { $0.id == selectedCommentID }
-              ) else {
+    private var commentPages: [Int] {
+        Array(Set(comments.compactMap { $0.page })).sorted()
+    }
+
+    private var selectedCommentPartIndex: Int {
+        guard let page = selectedComment?.page,
+              let index = commentPages.firstIndex(of: page) else {
             return 0
         }
 
@@ -259,6 +267,35 @@ struct TimeLine: View {
         comments[commentIndex]
             .replies
             .append(reply)
+    }
+
+    private func addComment(
+        text: String,
+        page: Int,
+        audioURL: URL?,
+        transcription: String?
+    ) {
+        guard !text.isEmpty || audioURL != nil else {
+            return
+        }
+
+        let newComment = BookDiscussionComment(
+            author: "Você",
+            text: text,
+            color: BookDiscussionColors.accent,
+            page: page,
+            audioURL: audioURL,
+            transcription: transcription,
+            replies: []
+        )
+
+        comments.append(newComment)
+        comments.sort {
+            ($0.page ?? Int.max) < ($1.page ?? Int.max)
+        }
+        withAnimation(.easeInOut(duration: 0.25)) {
+            selectedCommentID = newComment.id
+        }
     }
 
 }

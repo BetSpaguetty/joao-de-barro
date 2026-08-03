@@ -40,7 +40,32 @@ struct BookDiscussionComment: Identifiable {
     let author: String
     let text: String
     let color: Color
+    let page: Int?
+    let audioURL: URL?
+    let transcription: String?
     var replies: [BookChatReply]
+
+    init(
+        author: String,
+        text: String,
+        color: Color,
+        page: Int? = nil,
+        audioURL: URL? = nil,
+        transcription: String? = nil,
+        replies: [BookChatReply]
+    ) {
+        self.author = author
+        self.text = text
+        self.color = color
+        self.page = page
+        self.audioURL = audioURL
+        self.transcription = transcription
+        self.replies = replies
+    }
+
+    var isAudioComment: Bool {
+        audioURL != nil
+    }
 }
 
 struct BookDiscussionSection: Identifiable {

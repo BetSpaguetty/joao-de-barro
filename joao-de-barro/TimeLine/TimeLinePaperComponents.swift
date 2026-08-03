@@ -7,6 +7,7 @@ struct MainPaperCommentCard: View {
     let comment: BookDiscussionComment
     let isLiked: Bool
     let onLike: () -> Void
+    @State private var audioPlayer = AudioPlayer()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -43,6 +44,21 @@ struct MainPaperCommentCard: View {
                         design: .monospaced
                     )
                 )
+
+            Spacer()
+
+            if let page = comment.page {
+                Text("pág. \(page)")
+                    .font(
+                        .system(
+                            size: 11,
+                            weight: .medium,
+                            design: .monospaced
+                        )
+                    )
+                    .foregroundStyle(.black.opacity(0.58))
+                    .fixedSize()
+            }
         }
     }
 
@@ -52,8 +68,35 @@ struct MainPaperCommentCard: View {
             .frame(height: 1)
     }
 
+    @ViewBuilder
     private var commentText: some View {
-        Text(comment.text)
+        if let audioURL = comment.audioURL {
+            Button {
+                audioPlayer.toggle(url: audioURL)
+            } label: {
+                Label(
+                    audioPlayer.isPlaying
+                        ? "Parar áudio"
+                        : "Ouvir comentário",
+                    systemImage: audioPlayer.isPlaying
+                        ? "stop.fill"
+                        : "play.fill"
+                )
+            }
+            .buttonStyle(.plain)
+
+            Text(comment.transcription ?? comment.text)
+                .commentBodyStyle()
+        } else {
+            Text(comment.text)
+                .commentBodyStyle()
+        }
+    }
+}
+
+private extension View {
+    func commentBodyStyle() -> some View {
+        self
             .font(
                 .system(
                     size: 14,
@@ -73,7 +116,9 @@ struct MainPaperCommentCard: View {
                 alignment: .leading
             )
     }
+}
 
+extension MainPaperCommentCard {
     private var actions: some View {
         HStack(spacing: 6) {
             Spacer()
@@ -187,7 +232,11 @@ struct FirstReplyPreview: View {
     }
 
     private var replyText: some View {
-        Text(reply.text)
+        Text(
+            reply.isAudioMessage
+                ? (reply.transcription ?? "Mensagem de áudio")
+                : reply.text
+        )
             .font(
                 .system(
                     size: 13,

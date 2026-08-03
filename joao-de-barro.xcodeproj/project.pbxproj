@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		1FA01065300A9DAD007BB833 /* joao-de-barro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = "joao-de-barro.app"; path = "/Users/ilancukierman/Documents/joao-de-barro/build/Debug/joao-de-barro.app"; sourceTree = "<absolute>"; };
+		E39C666A301D1684008A7181 /* joao-de-barro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "joao-de-barro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,6 +33,7 @@
 			isa = PBXGroup;
 			children = (
 				1FA01067300A9DAD007BB833 /* joao-de-barro */,
+				E39C666A301D1684008A7181 /* joao-de-barro.app */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,7 +59,7 @@
 			packageProductDependencies = (
 			);
 			productName = "joao-de-barro";
-			productReference = 1FA01065300A9DAD007BB833 /* joao-de-barro.app */;
+			productReference = E39C666A301D1684008A7181 /* joao-de-barro.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

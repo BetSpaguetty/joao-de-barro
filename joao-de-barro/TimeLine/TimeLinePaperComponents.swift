@@ -7,6 +7,8 @@ struct MainPaperCommentCard: View {
     let comment: BookDiscussionComment
     let isLiked: Bool
     let onLike: () -> Void
+    var usesLegacyLayout = false
+    var showsReplyStack = true
     @State private var audioPlayer = AudioPlayer()
 
     var body: some View {
@@ -17,11 +19,19 @@ struct MainPaperCommentCard: View {
             actions
         }
         .foregroundStyle(.black)
-        .frame(width: 226)
-        .padding(.horizontal, 32)
-            .padding(.vertical, 39)
+        .frame(width: usesLegacyLayout ? 226 : 250)
+        .padding(.horizontal, usesLegacyLayout ? 32 : 35)
+        .padding(.vertical, usesLegacyLayout ? 39 : 48)
         .background {
-            MainPaperBackground()
+            MainPaperBackground(
+                isStacked:
+                    showsReplyStack
+                    && !comment.replies.isEmpty,
+                replyCount: comment.replies.count,
+                stackSeed: comment.id.uuidString
+                    .unicodeScalars
+                    .reduce(0) { $0 + Int($1.value) }
+            )
         }
         .shadow(
             color: .black.opacity(0.15),
@@ -373,7 +383,89 @@ private struct ChatPaperBackground: View {
 
 private struct MainPaperBackground: View {
 
+    let isStacked: Bool
+    let replyCount: Int
+    let stackSeed: Int
+
     var body: some View {
+        ZStack {
+            if isStacked {
+                if replyCount > 1 {
+                    paper
+                        .rotationEffect(
+                            .degrees(thirdPaperAngle)
+                        )
+                        .offset(
+                            x: thirdPaperOffset.width,
+                            y: thirdPaperOffset.height
+                        )
+                }
+
+                paper
+                    .rotationEffect(
+                        .degrees(backPaperAngle)
+                    )
+                    .offset(
+                        x: backPaperOffset.width,
+                        y: backPaperOffset.height
+                    )
+
+                paper
+                    .rotationEffect(
+                        .degrees(middlePaperAngle)
+                    )
+                    .offset(
+                        x: middlePaperOffset.width,
+                        y: middlePaperOffset.height
+                    )
+            }
+
+            paper
+        }
+        .accessibilityHidden(true)
+    }
+
+    private var direction: CGFloat {
+        stackSeed.isMultiple(of: 2) ? 1 : -1
+    }
+
+    private var backPaperAngle: Double {
+        Double(direction)
+            * Double(3 + (stackSeed % 3))
+    }
+
+    private var middlePaperAngle: Double {
+        Double(-direction)
+            * Double(1.5 + Double(stackSeed % 4) * 0.45)
+    }
+
+    private var thirdPaperAngle: Double {
+        Double(direction)
+            * Double(6 + (stackSeed % 2))
+    }
+
+    private var backPaperOffset: CGSize {
+        CGSize(
+            width: direction * CGFloat(7 + stackSeed % 4),
+            height: CGFloat(7 + stackSeed % 3)
+        )
+    }
+
+    private var middlePaperOffset: CGSize {
+        CGSize(
+            width: -direction * CGFloat(4 + stackSeed % 3),
+            height: CGFloat(4 + stackSeed % 2)
+        )
+    }
+
+    private var thirdPaperOffset: CGSize {
+        CGSize(
+            width: direction * CGFloat(11 + stackSeed % 3),
+            height: CGFloat(10 + stackSeed % 4)
+        )
+    }
+
+    private var paper: some View {
         Image("papel_comentario")
             .resizable(
                 capInsets: EdgeInsets(
@@ -384,6 +476,5 @@ private struct MainPaperBackground: View {
                 ),
                 resizingMode: .stretch
             )
-            .accessibilityHidden(true)
     }
 }

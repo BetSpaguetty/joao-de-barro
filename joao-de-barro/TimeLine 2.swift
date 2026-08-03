@@ -1,7 +1,6 @@
 import SwiftUI
 
-struct TimeLine: View {
-
+struct TimeLine2: View {
     @State private var comments: [BookDiscussionComment]
     @State private var selectedCommentID: UUID?
     @State private var selectedPage: Int?
@@ -12,22 +11,16 @@ struct TimeLine: View {
 
     init() {
         let comments = TimeLineSampleData.comments
-
         _comments = State(initialValue: comments)
-        _selectedCommentID = State(
-            initialValue: comments.first?.id
-        )
-        _selectedPage = State(
-            initialValue: comments.first?.page
-        )
+        _selectedCommentID = State(initialValue: comments.first?.id)
+        _selectedPage = State(initialValue: comments.first?.page)
     }
 
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 let availableHeight = geometry.size.height
-                let topHeight =
-                    availableHeight * (209.0 / 874.0)
+                let topHeight = availableHeight * (209.0 / 874.0)
 
                 ZStack {
                     Color.white
@@ -39,10 +32,8 @@ struct TimeLine: View {
                             .background(Color.white)
                             .zIndex(2)
 
-                        commentsCarousel
-                            .frame(
-                                height: availableHeight - topHeight
-                            )
+                        pageCarousel
+                            .frame(height: availableHeight - topHeight)
                     }
 
                     progressButton
@@ -51,18 +42,12 @@ struct TimeLine: View {
                             maxHeight: .infinity,
                             alignment: .bottomTrailing
                         )
-                        .offset(
-                            y: geometry.safeAreaInsets.bottom
-                        )
+                        .offset(y: geometry.safeAreaInsets.bottom)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(
-                for: UUID.self
-            ) { commentID in
-                if let comment = findComment(
-                    id: commentID
-                ) {
+            .navigationDestination(for: UUID.self) { commentID in
+                if let comment = findComment(id: commentID) {
                     TimeLineChat(
                         comment: comment,
                         onSendReply: addReply
@@ -78,41 +63,31 @@ struct TimeLine: View {
         .preferredColorScheme(.light)
     }
 
-    // MARK: - Top
-
     private var topSection: some View {
         VStack(spacing: 0) {
             TimeLineHeader()
-
             Spacer(minLength: 0)
 
             ReadingProgressHeader(
                 currentCommentIndex: selectedCommentPartIndex,
                 commentPages: commentPages,
                 totalPages: totalPages,
-                readingProgress: Double(currentPage)
-                    / Double(totalPages)
+                readingProgress:
+                    Double(currentPage) / Double(totalPages)
             )
+
             BookDividerView()
         }
     }
 
-    // MARK: - Main comments
-
-    private var commentsCarousel: some View {
+    private var pageCarousel: some View {
         GeometryReader { geometry in
-            let pageWidth = geometry.size.width * 0.80
+            let pageWidth = geometry.size.width * 0.76
 
-            ScrollView(
-                .horizontal,
-                showsIndicators: false
-            ) {
-                LazyHStack(
-                    alignment: .center,
-                    spacing: 10
-                ) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(alignment: .top, spacing: 8) {
                     ForEach(commentGroups) { group in
-                        commentsForPage(
+                        commentsColumn(
                             group,
                             width: pageWidth,
                             availableHeight: geometry.size.height
@@ -131,65 +106,80 @@ struct TimeLine: View {
             .scrollTargetBehavior(
                 .viewAligned(limitBehavior: .always)
             )
-            .scrollPosition(
-                id: $selectedPage,
-                anchor: .center
-            )
+            .scrollPosition(id: $selectedPage, anchor: .center)
             .onChange(of: selectedPage) {
                 guard let selectedPage,
-                      let firstComment = commentGroups
+                      let first = commentGroups
                         .first(where: { $0.page == selectedPage })?
                         .comments.first else {
                     return
                 }
 
-                selectedCommentID = firstComment.id
+                selectedCommentID = first.id
             }
         }
     }
 
-    private func commentsForPage(
-        _ group: TimelinePageGroup,
+    private func commentsColumn(
+        _ group: TimeLine2PageGroup,
         width: CGFloat,
         availableHeight: CGFloat
     ) -> some View {
-        let commentSlotHeight = availableHeight * 0.88
-
-        return ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: 18) {
                 ForEach(group.comments) { comment in
-                    NavigationLink(value: comment.id) {
-                        MainPaperCommentCard(
-                            comment: comment,
-                            isLiked: likedComments.contains(comment.id),
-                            onLike: {
-                                toggleLike(comment.id)
-                            }
-                        )
-                        .padding(.top, 20)
-                        .frame(
-                            width: width,
-                            height: commentSlotHeight,
-                            alignment: .top
-                        )
-                        .id(comment.id)
-                    }
-                    .buttonStyle(.plain)
+                    commentAndChat(
+                        comment,
+                        width: width
+                    )
+                    .id(comment.id)
                 }
             }
             .scrollTargetLayout()
+            .padding(.top, 18)
+            .padding(.bottom, 80)
         }
-        .frame(width: width)
-        .contentMargins(
-            .vertical,
-            max((availableHeight - commentSlotHeight) / 3, 12),
-            for: .scrollContent
+        .frame(width: width, height: availableHeight)
+        .scrollTargetBehavior(
+            .viewAligned(limitBehavior: .always)
         )
-        .scrollTargetBehavior(.viewAligned(limitBehavior: .always))
-        .scrollPosition(id: $selectedCommentID, anchor: .center)
+        .scrollPosition(id: $selectedCommentID, anchor: .top)
     }
 
-    // MARK: - Progress button
+    private func commentAndChat(
+        _ comment: BookDiscussionComment,
+        width: CGFloat
+    ) -> some View {
+        VStack(spacing: -32) {
+            MainPaperCommentCard(
+                comment: comment,
+                isLiked: likedComments.contains(comment.id),
+                onLike: {
+                    toggleLike(comment.id)
+                },
+                usesLegacyLayout: true,
+                showsReplyStack: false
+            )
+            .zIndex(1)
+
+            NavigationLink(value: comment.id) {
+                if let firstReply = comment.replies.first {
+                    FirstReplyPreview(
+                        reply: firstReply,
+                        remainingReplies: max(
+                            comment.replies.count - 1,
+                            0
+                        )
+                    )
+                } else {
+                    EmptyChatPreview()
+                }
+            }
+            .buttonStyle(.plain)
+            .zIndex(2)
+        }
+        .frame(width: width)
+    }
 
     private var progressButton: some View {
         NavigationLink {
@@ -216,26 +206,22 @@ struct TimeLine: View {
         .contentShape(Rectangle())
         .accessibilityLabel("Atualizar progresso")
     }
-    // MARK: - Selected comment
 
-    private var selectedComment:
-        BookDiscussionComment? {
+    private var selectedComment: BookDiscussionComment? {
         guard let selectedCommentID else {
             return comments.first
         }
 
-        return comments.first {
-            $0.id == selectedCommentID
-        }
+        return comments.first { $0.id == selectedCommentID }
     }
 
     private var commentPages: [Int] {
         Array(Set(comments.compactMap { $0.page })).sorted()
     }
 
-    private var commentGroups: [TimelinePageGroup] {
+    private var commentGroups: [TimeLine2PageGroup] {
         commentPages.map { page in
-            TimelinePageGroup(
+            TimeLine2PageGroup(
                 page: page,
                 comments: comments.filter { $0.page == page }
             )
@@ -251,22 +237,13 @@ struct TimeLine: View {
         return index
     }
 
-    // MARK: - Helpers
-
-    private func findComment(
-        id: UUID
-    ) -> BookDiscussionComment? {
-        comments.first {
-            $0.id == id
-        }
+    private func findComment(id: UUID) -> BookDiscussionComment? {
+        comments.first { $0.id == id }
     }
 
     private func toggleLike(_ commentID: UUID) {
         withAnimation(
-            .spring(
-                response: 0.3,
-                dampingFraction: 0.7
-            )
+            .spring(response: 0.3, dampingFraction: 0.7)
         ) {
             if likedComments.contains(commentID) {
                 likedComments.remove(commentID)
@@ -280,17 +257,13 @@ struct TimeLine: View {
         commentID: UUID,
         reply: BookChatReply
     ) {
-        guard let commentIndex =
-            comments.firstIndex(
-                where: { $0.id == commentID }
-            )
-        else {
+        guard let index = comments.firstIndex(
+            where: { $0.id == commentID }
+        ) else {
             return
         }
 
-        comments[commentIndex]
-            .replies
-            .append(reply)
+        comments[index].replies.append(reply)
     }
 
     private func addComment(
@@ -317,15 +290,15 @@ struct TimeLine: View {
         comments.sort {
             ($0.page ?? Int.max) < ($1.page ?? Int.max)
         }
+
         withAnimation(.easeInOut(duration: 0.25)) {
             selectedPage = page
             selectedCommentID = newComment.id
         }
     }
-
 }
 
-private struct TimelinePageGroup: Identifiable {
+private struct TimeLine2PageGroup: Identifiable {
     let page: Int
     let comments: [BookDiscussionComment]
 
@@ -333,5 +306,5 @@ private struct TimelinePageGroup: Identifiable {
 }
 
 #Preview {
-    TimeLine()
+    TimeLine2()
 }

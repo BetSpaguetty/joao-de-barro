@@ -6,6 +6,7 @@ struct TimeLineProgressView: View {
     @FocusState private var focusedField: Field?
 
     let totalPages: Int
+    let onSave: (Int, String) -> Void
 
     @State private var selectedPage: Double
     @State private var pageText: String
@@ -18,12 +19,14 @@ struct TimeLineProgressView: View {
 
     init(
         currentPage: Int = 234,
-        totalPages: Int = 480
+        totalPages: Int = 480,
+        onSave: @escaping (Int, String) -> Void = { _, _ in }
     ) {
         let safeTotal = max(totalPages, 1)
         let safePage = min(max(currentPage, 1), safeTotal)
 
         self.totalPages = safeTotal
+        self.onSave = onSave
         _selectedPage = State(initialValue: Double(safePage))
         _pageText = State(initialValue: String(safePage))
     }
@@ -218,6 +221,12 @@ struct TimeLineProgressView: View {
 
             Button {
                 focusedField = nil
+                onSave(
+                    Int(selectedPage),
+                    readingComment.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    )
+                )
                 dismiss()
             } label: {
                 HStack(spacing: 10) {

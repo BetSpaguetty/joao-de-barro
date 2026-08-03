@@ -12,16 +12,7 @@ struct TimeLineHeader: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "arrow.left")
-                    .font(.system(size: 24))
-            }
-
-            Spacer()
-
+        ZStack {
             Text("Título do Livro")
                 .font(
                     .system(
@@ -32,22 +23,36 @@ struct TimeLineHeader: View {
                 )
                 .italic()
 
-            Spacer()
-
-            HStack(spacing: 16) {
+            HStack {
                 Button {
-                    // Abrir configurações.
+                    dismiss()
                 } label: {
-                    Image(systemName: "gearshape")
+                    Image(systemName: "arrow.left")
+                        .font(.system(size: 24))
+                        .frame(
+                            width: 76,
+                            alignment: .leading
+                        )
                 }
 
-                Button {
-                    // Abrir perfil.
-                } label: {
-                    Image(systemName: "person")
+                Spacer()
+
+                HStack(spacing: 16) {
+                    Button {
+                        // Abrir configurações.
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+
+                    Button {
+                        // Abrir perfil.
+                    } label: {
+                        Image(systemName: "person")
+                    }
                 }
+                .font(.system(size: 24))
+                .frame(width: 76, alignment: .trailing)
             }
-            .font(.system(size: 24))
         }
         .foregroundStyle(.black)
         .padding(.horizontal, 25)
@@ -60,9 +65,18 @@ struct TimeLineHeader: View {
 
 struct ReadingProgressHeader: View {
 
+    var currentCommentIndex = 0
+    var commentCountsByPart: [Int] = [1]
+    var readingProgress = 0.0
+
     var body: some View {
         GeometryReader { geometry in
             let width = geometry.size.width
+            let positions = commentPositions(width: width)
+            let safeIndex = min(
+                max(currentCommentIndex, 0),
+                max(positions.count - 1, 0)
+            )
 
             ZStack(alignment: .leading) {
                 Rectangle()
@@ -78,17 +92,31 @@ struct ReadingProgressHeader: View {
                     .frame(width: 7, height: 7)
                     .offset(x: width - 7)
 
-                Circle()
-                    .fill(.black)
-                    .frame(width: 23, height: 23)
-                    .offset(x: width * 0.18)
+                ForEach(
+                    Array(positions.enumerated()),
+                    id: \.offset
+                ) { _, position in
+                    Circle()
+                        .fill(.black.opacity(0.12))
+                        .frame(width: 27, height: 27)
+                        .offset(x: position - 13.5)
+                }
 
-                Circle()
-                    .fill(.black.opacity(0.12))
-                    .frame(width: 27, height: 27)
-                    .offset(
-                        x: width * 0.18 + 16
-                    )
+                if !positions.isEmpty {
+                    Circle()
+                        .fill(.black)
+                        .frame(width: 11, height: 11)
+                        .offset(
+                            x: positions[safeIndex] - 5.5
+                        )
+                        .animation(
+                            .spring(
+                                response: 0.35,
+                                dampingFraction: 0.78
+                            ),
+                            value: safeIndex
+                        )
+                }
 
                 VStack(spacing: 1) {
                     Image(
@@ -104,13 +132,62 @@ struct ReadingProgressHeader: View {
                     .font(.system(size: 7))
                 }
                 .offset(
-                    x: width * 0.68,
+                    x: min(
+                        max(readingProgress, 0),
+                        1
+                    ) * (width - 17),
                     y: -26
+                )
+                .animation(
+                    .spring(
+                        response: 0.42,
+                        dampingFraction: 0.82
+                    ),
+                    value: readingProgress
                 )
             }
         }
         .frame(height: 42)
         .padding(.horizontal, 48)
+    }
+
+    private func commentPositions(
+        width: CGFloat
+    ) -> [CGFloat] {
+        let counts = commentCountsByPart
+            .filter { $0 > 0 }
+
+        guard !counts.isEmpty else {
+            return []
+        }
+
+        let commentSpacing: CGFloat = 18
+        let partSpacing: CGFloat = 44
+        var rawPositions: [CGFloat] = []
+        var currentPosition: CGFloat = 0
+
+        for (partIndex, count) in counts.enumerated() {
+            for commentIndex in 0..<count {
+                rawPositions.append(currentPosition)
+
+                if commentIndex < count - 1 {
+                    currentPosition += commentSpacing
+                }
+            }
+
+            if partIndex < counts.count - 1 {
+                currentPosition += partSpacing
+            }
+        }
+
+        let start = width * 0.16
+        let availableSpan = max(width - start - 14, 1)
+        let rawSpan = max(rawPositions.last ?? 0, 1)
+        let scale = min(availableSpan / rawSpan, 1)
+
+        return rawPositions.map {
+            start + ($0 * scale)
+        }
     }
 }
 

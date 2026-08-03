@@ -92,4 +92,7 @@ struct PageCurlView: UIViewControllerRepresentable {
             return controllers[index + 1]
         }
     }
+   
 }
+
+    

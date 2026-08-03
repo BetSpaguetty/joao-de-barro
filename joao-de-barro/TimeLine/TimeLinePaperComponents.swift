@@ -75,10 +75,13 @@ struct MainPaperCommentCard: View {
     }
 
     private var actions: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 6) {
             Spacer()
 
-            Image(systemName: "pencil.tip")
+            Image("Peninha")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 25, height: 25)
 
             Button(action: onLike) {
                 Image(
@@ -89,10 +92,18 @@ struct MainPaperCommentCard: View {
                 .foregroundStyle(
                     isLiked ? .red : .black
                 )
+                .font(
+                    .system(
+                        size: 21,
+                        weight: .medium
+                    )
+                )
+                .frame(width: 25, height: 25)
             }
             .buttonStyle(.plain)
+            .contentShape(Rectangle())
         }
-        .font(.system(size: 19))
+        .padding(.top, 1)
     }
 }
 
@@ -116,8 +127,10 @@ struct FirstReplyPreview: View {
 
                 Spacer()
 
-                Image(systemName: "pencil.tip")
-                    .font(.system(size: 18))
+                Image("Peninha")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 23, height: 23)
 
                 Image(systemName: "heart")
                     .font(.system(size: 18))
@@ -274,8 +287,10 @@ struct EmptyChatPreview: View {
 
                 Spacer()
 
-                Image(systemName: "pencil.tip")
-                    .font(.system(size: 18))
+                Image("Peninha")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 23, height: 23)
             }
         }
         .foregroundStyle(.black)

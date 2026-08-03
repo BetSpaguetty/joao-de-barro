@@ -8,9 +8,6 @@
 import SwiftUI
 
 struct TimeLineHeader: View {
-
-    @Environment(\.dismiss) private var dismiss
-
     var body: some View {
         ZStack {
             Text("Título do Livro")
@@ -24,17 +21,6 @@ struct TimeLineHeader: View {
                 .italic()
 
             HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "arrow.left")
-                        .font(.system(size: 24))
-                        .frame(
-                            width: 76,
-                            alignment: .leading
-                        )
-                }
-
                 Spacer()
 
                 HStack(spacing: 16) {
@@ -44,11 +30,12 @@ struct TimeLineHeader: View {
                         Image(systemName: "gearshape")
                     }
 
-                    Button {
-                        // Abrir perfil.
+                    NavigationLink {
+                        PerfilClube()
                     } label: {
                         Image(systemName: "person")
                     }
+                    .accessibilityLabel("Abrir perfil do clube")
                 }
                 .font(.system(size: 24))
                 .frame(width: 76, alignment: .trailing)

@@ -192,18 +192,12 @@ struct PerfilClube: View {
                     .frame(height: 152, alignment: .topLeading)
                 }
             } else {
-                Button {
-                    // Escolher a primeira leitura do clube.
-                } label: {
-                    BookCoverPlaceholder(
-                        title: "",
-                        width: 100,
-                        height: 130,
-                        showsAddButton: true
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Adicionar leitura atual")
+                BookCoverPlaceholder(
+                    title: "",
+                    width: 100,
+                    height: 130,
+                    showsAddButton: true
+                )
             }
         }
     }

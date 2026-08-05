@@ -69,6 +69,7 @@ struct ReadingProgressHeader: View {
     var commentPages: [Int] = []
     var totalPages = 1
     var readingProgress = 0.0
+    var onSelectCommentPart: ((Int) -> Void)?
 
     var body: some View {
         GeometryReader { geometry in
@@ -147,9 +148,36 @@ struct ReadingProgressHeader: View {
                     value: readingProgress
                 )
             }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        selectNearestComment(
+                            to: value.location.x,
+                            positions: positions
+                        )
+                    }
+            )
         }
         .frame(height: 42)
         .padding(.horizontal, 48)
+    }
+
+    private func selectNearestComment(
+        to location: CGFloat,
+        positions: [CGFloat]
+    ) {
+        guard !positions.isEmpty,
+              let nearestIndex = positions.indices.min(
+                by: {
+                    abs(positions[$0] - location)
+                        < abs(positions[$1] - location)
+                }
+              ) else {
+            return
+        }
+
+        onSelectCommentPart?(nearestIndex)
     }
 
     private func commentPositions(

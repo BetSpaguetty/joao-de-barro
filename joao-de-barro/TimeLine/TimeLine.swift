@@ -91,7 +91,8 @@ struct TimeLine: View {
                 commentPages: commentPages,
                 totalPages: totalPages,
                 readingProgress: Double(currentPage)
-                    / Double(totalPages)
+                    / Double(totalPages),
+                onSelectCommentPart: selectCommentPart
             )
             BookDividerView()
         }
@@ -273,6 +274,26 @@ struct TimeLine: View {
             } else {
                 likedComments.insert(commentID)
             }
+        }
+    }
+
+    private func selectCommentPart(_ index: Int) {
+        guard commentPages.indices.contains(index) else {
+            return
+        }
+
+        let page = commentPages[index]
+        guard let firstComment = commentGroups
+            .first(where: { $0.page == page })?
+            .comments.first else {
+            return
+        }
+
+        withAnimation(
+            .spring(response: 0.35, dampingFraction: 0.82)
+        ) {
+            selectedPage = page
+            selectedCommentID = firstComment.id
         }
     }
 

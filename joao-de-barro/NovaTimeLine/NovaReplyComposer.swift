@@ -82,29 +82,29 @@ struct NovaComposerTabs: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 10,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 10
+            )
+            .fill(NovaTimelineStyle.composerGray)
+            .frame(width: 64, height: 18)
+
             Button(action: onOpenProgress) {
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 10,
-                    bottomLeadingRadius: 0,
-                    bottomTrailingRadius: 0,
-                    topTrailingRadius: 10
-                )
-                .fill(NovaTimelineStyle.composerGray)
-                .frame(width: 64, height: 18)
+                ZStack {
+                    NovaBookmarkShape()
+                        .fill(NovaTimelineStyle.panelGray)
+
+                    Image(systemName: "pencil.tip")
+                        .font(.system(size: 24))
+                        .rotationEffect(.degrees(-24))
+                        .offset(y: 12)
+                }
+                .frame(width: 60, height: 64)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Atualizar progresso")
-
-            ZStack {
-                NovaBookmarkShape()
-                    .fill(NovaTimelineStyle.composerGray)
-
-                Image(systemName: "pencil.tip")
-                    .font(.system(size: 24))
-                    .rotationEffect(.degrees(-24))
-                    .offset(y: 12)
-            }
-            .frame(width: 60, height: 64)
         }
         .padding(.trailing, 32)
     }

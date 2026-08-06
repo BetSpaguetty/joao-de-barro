@@ -53,6 +53,7 @@ struct NovaTimeLine: View {
                         readingNote: $readingNote,
                         recorder: progressRecorder,
                         onMicrophoneTap: toggleProgressRecording,
+                        onOpenChat: closeProgress,
                         onSave: saveProgress
                     )
                     .frame(

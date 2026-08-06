@@ -12,6 +12,7 @@ struct NovaProgressPanel: View {
 
     let recorder: AudioRecorder
     let onMicrophoneTap: () -> Void
+    let onOpenChat: () -> Void
     let onSave: () -> Void
 
     @FocusState private var focusedField: Field?
@@ -56,20 +57,24 @@ struct NovaProgressPanel: View {
 
     private var raisedTabs: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            ZStack {
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 12,
-                    bottomLeadingRadius: 0,
-                    bottomTrailingRadius: 0,
-                    topTrailingRadius: 12
-                )
-                .fill(NovaTimelineStyle.panelGray)
+            Button(action: onOpenChat) {
+                ZStack {
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: 12,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: 12
+                    )
+                    .fill(NovaTimelineStyle.composerGray)
 
-                Image(systemName: "bubble.left")
-                    .font(.system(size: 34))
-                    .offset(y: 14)
+                    Image(systemName: "bubble.left")
+                        .font(.system(size: 34))
+                        .offset(y: 14)
+                }
+                .frame(width: 80, height: 82)
             }
-            .frame(width: 80, height: 82)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Voltar ao chat")
 
             NovaBookmarkShape()
                 .fill(NovaTimelineStyle.panelGray)

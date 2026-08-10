@@ -8,8 +8,8 @@ struct NovaTimeLine: View {
     @State private var selectedCommentID: UUID?
     @State private var replyText = ""
     @State private var progressPercent = 0
+    @State private var progressPage = 1
     @State private var browsingPercent = 0
-    @State private var progressText = "0"
     @State private var readingNote = ""
     @State private var isShowingProgress = false
     @State private var replyRecorder = AudioRecorder()
@@ -20,15 +20,20 @@ struct NovaTimeLine: View {
 
     init() {
         let firstComment = TimeLineSampleData.comments.first
-        let initialPercent = firstComment?.page.map {
-            Int(
-                (Double($0) / 480.0 * 100)
-                    .rounded()
-            )
-        } ?? 0
+        var initialPercent = 0
+        if let page = firstComment?.page {
+            let percent = (Double(page) / 480.0) * 100
+            initialPercent = Int(percent.rounded())
+        }
 
         _selectedCommentID = State(
             initialValue: firstComment?.id
+        )
+        _progressPage = State(
+            initialValue: firstComment?.page ?? 1
+        )
+        _progressPercent = State(
+            initialValue: initialPercent
         )
         _browsingPercent = State(
             initialValue: initialPercent
@@ -48,8 +53,8 @@ struct NovaTimeLine: View {
                         .onTapGesture(perform: closeProgress)
 
                     NovaProgressPanel(
-                        progressPercent: $progressPercent,
-                        progressText: $progressText,
+                        currentPage: progressPage,
+                        totalPages: bookPageCount,
                         readingNote: $readingNote,
                         recorder: progressRecorder,
                         onMicrophoneTap: toggleProgressRecording,
@@ -71,9 +76,6 @@ struct NovaTimeLine: View {
             .easeInOut(duration: 0.23),
             value: isShowingProgress
         )
-        .onChange(of: progressPercent) {
-            progressText = String(progressPercent)
-        }
         .onChange(of: browsingPercent) {
             selectFirstCommentAtCurrentProgress()
         }
@@ -147,18 +149,28 @@ struct NovaTimeLine: View {
     }
 
     private var commentPercentages: [Int] {
-        Array(Set(comments.map(commentPercentage))).sorted()
+        Array(Set(readableComments.map(commentPercentage))).sorted()
     }
 
     private var visibleComments: [BookDiscussionComment] {
-        comments.filter {
+        readableComments.filter {
             commentPercentage($0) == browsingPercent
         }
     }
 
     private var orderedComments: [BookDiscussionComment] {
-        comments.sorted {
+        readableComments.sorted {
             commentPercentage($0) < commentPercentage($1)
+        }
+    }
+
+    private var readableComments: [BookDiscussionComment] {
+        comments.filter { comment in
+            guard let page = comment.page else {
+                return true
+            }
+
+            return page <= progressPage
         }
     }
 
@@ -203,7 +215,7 @@ struct NovaTimeLine: View {
 
     private func updateBrowsingPercentFromSelectedComment() {
         guard let selectedCommentID,
-              let comment = comments.first(where: {
+              let comment = readableComments.first(where: {
                   $0.id == selectedCommentID
               }) else {
             return
@@ -288,28 +300,44 @@ struct NovaTimeLine: View {
         isShowingProgress = false
     }
 
-    private func saveProgress() {
+    private func saveProgress(page: Int) {
+        let savedPage = min(max(page, 1), bookPageCount)
+        let savedPercent = Int(
+            (Double(savedPage) / Double(bookPageCount) * 100)
+                .rounded()
+        )
+
+        progressPage = savedPage
+        progressPercent = savedPercent
+
         let trimmedNote = readingNote.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
 
         if !trimmedNote.isEmpty {
-            let page = Int(
-                (Double(progressPercent) / 100.0
-                    * Double(bookPageCount)).rounded()
-            )
             let newComment = BookDiscussionComment(
                 author: "Você",
                 text: trimmedNote,
                 color: BookDiscussionColors.accent,
-                page: page,
+                page: savedPage,
                 replies: []
             )
 
             comments.append(newComment)
-            browsingPercent = progressPercent
+            browsingPercent = savedPercent
             selectedCommentID = newComment.id
             readingNote = ""
+        } else if !readableComments.contains(where: {
+            $0.id == selectedCommentID
+        }) {
+            let lastReadableComment = readableComments.max {
+                ($0.page ?? 0) < ($1.page ?? 0)
+            }
+
+            selectedCommentID = lastReadableComment?.id
+            browsingPercent = lastReadableComment.map {
+                commentPercentage($0)
+            } ?? savedPercent
         }
 
         closeProgress()

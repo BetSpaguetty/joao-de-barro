@@ -2,24 +2,47 @@ import SwiftUI
 
 struct NovaProgressPanel: View {
     private enum Field: Hashable {
-        case percentage
+        case page
         case note
     }
 
-    @Binding var progressPercent: Int
-    @Binding var progressText: String
+    let totalPages: Int
     @Binding var readingNote: String
 
     let recorder: AudioRecorder
     let onMicrophoneTap: () -> Void
     let onOpenChat: () -> Void
-    let onSave: () -> Void
+    let onSave: (Int) -> Void
 
     @FocusState private var focusedField: Field?
+    @State private var selectedPage: Double
+    @State private var pageText: String
+
+    init(
+        currentPage: Int,
+        totalPages: Int,
+        readingNote: Binding<String>,
+        recorder: AudioRecorder,
+        onMicrophoneTap: @escaping () -> Void,
+        onOpenChat: @escaping () -> Void,
+        onSave: @escaping (Int) -> Void
+    ) {
+        let safeTotal = max(totalPages, 1)
+        let safePage = min(max(currentPage, 1), safeTotal)
+
+        self.totalPages = safeTotal
+        _readingNote = readingNote
+        self.recorder = recorder
+        self.onMicrophoneTap = onMicrophoneTap
+        self.onOpenChat = onOpenChat
+        self.onSave = onSave
+        _selectedPage = State(initialValue: Double(safePage))
+        _pageText = State(initialValue: String(safePage))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            percentageSection
+            pageSection
             noteSection
             saveButton
         }
@@ -83,9 +106,9 @@ struct NovaProgressPanel: View {
         .padding(.trailing, 30)
     }
 
-    private var percentageSection: some View {
+    private var pageSection: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text("Quanto do livro você leu?")
+            Text("Em que página você parou?")
                 .font(
                     .system(
                         size: 15,
@@ -95,8 +118,8 @@ struct NovaProgressPanel: View {
                 )
 
             HStack(spacing: 10) {
-                TextField("", text: $progressText)
-                    .focused($focusedField, equals: .percentage)
+                TextField("", text: $pageText)
+                    .focused($focusedField, equals: .page)
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.center)
                     .font(.system(size: 14, design: .monospaced))
@@ -105,26 +128,23 @@ struct NovaProgressPanel: View {
                         Capsule()
                             .stroke(.black, lineWidth: 1.5)
                     }
-                    .onChange(of: progressText) {
-                        updatePercentFromText()
+                    .onChange(of: pageText) {
+                        updatePageFromText()
                     }
 
-                Text("% do livro")
+                Text("pág. de \(totalPages)")
                     .font(.system(size: 14, design: .monospaced))
             }
 
             Slider(
-                value: Binding(
-                    get: { Double(progressPercent) },
-                    set: {
-                        progressPercent = Int($0)
-                        progressText = String(progressPercent)
-                    }
-                ),
-                in: 0...100,
+                value: $selectedPage,
+                in: 1...Double(totalPages),
                 step: 1
             )
             .tint(.black)
+            .onChange(of: selectedPage) {
+                pageText = String(Int(selectedPage))
+            }
         }
     }
 
@@ -188,7 +208,7 @@ struct NovaProgressPanel: View {
     private var saveButton: some View {
         Button {
             focusedField = nil
-            onSave()
+            onSave(Int(selectedPage))
         } label: {
             Label("Enviar comentário", systemImage: "paperplane")
                 .font(.system(size: 14, weight: .semibold, design: .monospaced))
@@ -203,10 +223,11 @@ struct NovaProgressPanel: View {
         .padding(.top, 22)
     }
 
-    private func updatePercentFromText() {
-        guard let value = Int(progressText) else {
+    private func updatePageFromText() {
+        guard let page = Int(pageText) else {
             return
         }
-        progressPercent = min(max(value, 0), 100)
+
+        selectedPage = Double(min(max(page, 1), totalPages))
     }
 }
